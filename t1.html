@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tic Tac Toe Game</title>
+    <style>
+      body {
+        font-family: "Segoe UI", sans-serif;
+        background: linear-gradient(to right, #141e30, #243b55);
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        margin: 0;
+      }
+      h1 {
+        margin-bottom: 10px;
+        font-size: 3rem;
+      }
+      .mode-select {
+        margin-bottom: 20px;
+        font-size: 1.5rem;
+      }
+      .mode-select label {
+        margin: 0 15px;
+        cursor: pointer;
+      }
+      .board {
+        display: grid;
+        grid-template-columns: repeat(3, 120px);
+        gap: 12px;
+      }
+      .cell {
+        width: 120px;
+        height: 120px;
+        font-size: 2.5em;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(255, 255, 255, 0.1);
+        border: 2px solid #fff;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+      .cell:hover {
+        background-color: rgba(255, 255, 255, 0.3);
+      }
+      .info {
+        margin-top: 20px;
+        font-size: 1.5rem;
+        min-height: 1.5em;
+      }
+      .scores {
+        margin-top: 10px;
+        font-size: 1.3rem;
+      }
+      .buttons {
+        margin-top: 20px;
+      }
+      button {
+        padding: 10px 20px;
+        background-color: #00aaff;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        margin: 5px;
+        font-size: 1rem;
+      }
+      button:hover {
+        background-color: #008ecc;
+      }
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Tic Tac Toe</h1>
+    <div class="mode-select" id="modeSelect">
+      <label
+        ><input type="radio" name="mode" value="2" checked />
+        <strong>2 Player</strong></label
+      >
+      <label
+        ><input type="radio" name="mode" value="1" />
+        <strong>Single Player</strong></label
+      >
+    </div>
+    <div class="board" id="board"></div>
+    <div class="info" id="status"></div>
+    <div class="scores">
+      <span id="scoreX">X: 0</span> | <span id="scoreO">O: 0</span>
+    </div>
+    <div class="buttons" id="gameButtons">
+      <button onclick="resetBoard()">Continue</button>
+      <button onclick="endGame()">Exit</button>
+    </div>
+    <div class="buttons hidden" id="restartButtons">
+      <button onclick="startNewGame()">Start New Game</button>
+    </div>
+
+    <script>
+      const board = document.getElementById("board");
+      const statusText = document.getElementById("status");
+      const scoreX = document.getElementById("scoreX");
+      const scoreO = document.getElementById("scoreO");
+      const modeRadios = document.getElementsByName("mode");
+      const modeSelect = document.getElementById("modeSelect");
+      const gameButtons = document.getElementById("gameButtons");
+      const restartButtons = document.getElementById("restartButtons");
+
+      let cells;
+      let currentPlayer = "X";
+      let gameActive = true;
+      let gameMode = "2";
+      let scores = { X: 0, O: 0 };
+
+      modeRadios.forEach((radio) => {
+        radio.addEventListener("change", () => {
+          gameMode = document.querySelector('input[name="mode"]:checked').value;
+          resetBoard();
+        });
+      });
+
+      function startGame() {
+        board.innerHTML = "";
+        for (let i = 0; i < 9; i++) {
+          const cell = document.createElement("div");
+          cell.classList.add("cell");
+          cell.addEventListener("click", handleClick);
+          board.appendChild(cell);
+        }
+        cells = document.querySelectorAll(".cell");
+        currentPlayer = "X";
+        gameActive = true;
+        statusText.textContent = `Player ${currentPlayer}'s turn`;
+      }
+
+      function handleClick(e) {
+        const cell = e.target;
+        if (!gameActive || cell.textContent !== "") return;
+        cell.textContent = currentPlayer;
+
+        if (checkWin(currentPlayer)) {
+          gameActive = false;
+          statusText.textContent = `Player ${currentPlayer} wins!`;
+          scores[currentPlayer]++;
+          updateScores();
+          return;
+        }
+
+        // 🔵 If all 9 boxes are filled and no one wins → draw
+        if ([...cells].every((c) => c.textContent !== "")) {
+          gameActive = false;
+          statusText.textContent = `It's a draw!`;
+          cells.forEach((c) => {
+            c.style.backgroundColor = "#0066cc"; // Blue background on draw
+          });
+          return;
+        }
+
+        currentPlayer = currentPlayer === "X" ? "O" : "X";
+        statusText.textContent = `Player ${currentPlayer}'s turn`;
+
+        // For single player mode, let the computer play
+        if (gameMode === "1" && currentPlayer === "O") {
+          setTimeout(computerMove, 500);
+        }
+      }
+
+      function computerMove() {
+        let empty = [...cells].filter((c) => c.textContent === "");
+        if (empty.length === 0) return;
+        const randomCell = empty[Math.floor(Math.random() * empty.length)];
+        randomCell.textContent = "O";
+
+        if (checkWin("O")) {
+          gameActive = false;
+          statusText.textContent = `Computer wins!`;
+          scores["O"]++;
+          updateScores();
+          return;
+        }
+
+        if ([...cells].every((c) => c.textContent !== "")) {
+          gameActive = false;
+          statusText.textContent = `It's a draw!`;
+          cells.forEach((c) => {
+            c.style.backgroundColor = "#0066cc"; // Blue on draw
+          });
+          return;
+        }
+
+        currentPlayer = "X";
+        statusText.textContent = `Player ${currentPlayer}'s turn`;
+      }
+
+      function checkWin(player) {
+        const combos = [
+          [0, 1, 2],
+          [3, 4, 5],
+          [6, 7, 8],
+          [0, 3, 6],
+          [1, 4, 7],
+          [2, 5, 8],
+          [0, 4, 8],
+          [2, 4, 6],
+        ];
+
+        for (let combo of combos) {
+          if (
+            cells[combo[0]].textContent === player &&
+            cells[combo[1]].textContent === player &&
+            cells[combo[2]].textContent === player
+          ) {
+            // 🟢 Make the 3 winning boxes green
+            combo.forEach((index) => {
+              cells[index].style.backgroundColor = "#00cc66";
+            });
+            return true;
+          }
+        }
+        return false;
+      }
+
+      function updateScores() {
+        scoreX.textContent = `X: ${scores.X}`;
+        scoreO.textContent = `O: ${scores.O}`;
+      }
+
+      function resetBoard() {
+        cells.forEach((cell) => {
+          cell.style.backgroundColor = "rgba(255,255,255,0.1)";
+        });
+        startGame();
+      }
+
+      function endGame() {
+        board.innerHTML = "";
+        statusText.textContent = "Game exited. Select mode and start again.";
+        gameActive = false;
+        scores = { X: 0, O: 0 };
+        updateScores();
+        gameButtons.classList.add("hidden");
+        restartButtons.classList.remove("hidden");
+        modeSelect.classList.remove("hidden");
+      }
+
+      function startNewGame() {
+        gameButtons.classList.remove("hidden");
+        restartButtons.classList.add("hidden");
+        modeSelect.classList.remove("hidden");
+        scores = { X: 0, O: 0 };
+        updateScores();
+        gameMode = document.querySelector('input[name="mode"]:checked').value;
+        resetBoard();
+      }
+
+      startGame();
+    </script>
+  </body>
+</html>
